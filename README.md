@@ -1,5 +1,47 @@
 # Backend API Endpoints Summary
 
+## How to Run it:
+- Make sure you have Docker installed
+- make sure you set up the `.env` and `.env.docker` files properly
+- open a terminal in the project's directory, then run `make build`
+- then run `make up` to spin up the app and mongo
+- OR run `make tools` to spin up the app, mongo and mongo-express which is a GUI for mongo (localhost:8081).
+
+- .env
+```sh
+PORT=3000
+NODE_ENV=development
+
+MONGODB_URI=mongodb://localhost:27017/integrations
+
+JWT_SECRET=your-jwt-secret
+
+GITHUB_CLIENT_ID=your-gh-client-id
+GITHUB_CLIENT_SECRET=your-gh-secret
+GITHUB_CALLBACK_URL=http://localhost:3000/api/auth/github/callback
+
+FRONTEND_URL=http://localhost:4200
+```
+- .env.docker
+```sh
+NODE_ENV=production
+
+MONGO_ROOT_USERNAME=admin
+MONGO_ROOT_PASSWORD=password123
+MONGO_DATABASE=integrations
+
+JWT_SECRET=your-jwt-secret
+
+GITHUB_CLIENT_ID=your-gh-client-id
+GITHUB_CLIENT_SECRET=your-gh-secret
+GITHUB_CALLBACK_URL=http://localhost:3000/api/auth/github/callback
+
+FRONTEND_URL=http://localhost:4200
+
+MONGO_EXPRESS_USERNAME=admin
+MONGO_EXPRESS_PASSWORD=admin123
+```
+
 ## Authentication Endpoints (`/api/auth`)
 
 | Endpoint | Method | Purpose | Requirement Served |
