@@ -2,9 +2,7 @@ const { Organization, Repository, Commit, PullRequest, Issue, User } = require('
 
 class DataController {
 
-  /**
-   * Get available collections with counts
-   */
+
   async getCollections(req, res) {
     try {
       const collections = [
@@ -43,9 +41,6 @@ class DataController {
     }
   }
 
-  /**
-   * Get data from a specific collection with pagination and search
-   */
   async getCollectionData(req, res) {
     try {
       const { collectionName } = req.params;
@@ -134,9 +129,6 @@ class DataController {
     }
   }
 
-  /**
-   * Get field definitions for AG Grid column setup
-   */
   async getCollectionFields(req, res) {
     try {
       const { collectionName } = req.params;
@@ -219,9 +211,6 @@ class DataController {
     }
   }
 
-  /**
-   * Export collection data in various formats
-   */
   async exportCollectionData(req, res) {
     try {
       const { collectionName } = req.params;
@@ -296,9 +285,6 @@ class DataController {
     }
   }
 
-  /**
-   * Get collection statistics
-   */
   async getCollectionStats(req, res) {
     try {
       const { collectionName } = req.params;
@@ -364,9 +350,6 @@ class DataController {
     }
   }
 
-  /**
-   * Search across all collections
-   */
   async searchAllCollections(req, res) {
     try {
       const { query: searchQuery, limit = 10 } = req.query;
@@ -444,13 +427,10 @@ class DataController {
     }
   }
 
-  /**
-   * Get column width based on field type and name
-   */
   getColumnWidth(type, fieldName) {
     // Specific field width mappings
     const fieldWidthMap = {
-      'id': 80,
+      'id': 100,
       'login': 120,
       'name': 200,
       'full_name': 250,
@@ -489,9 +469,6 @@ class DataController {
     }
   }
 
-  /**
-   * Delete specific record from collection (admin function)
-   */
   async deleteRecord(req, res) {
     try {
       const { collectionName, recordId } = req.params;
@@ -543,9 +520,6 @@ class DataController {
     }
   }
 
-  /**
-   * Clear all data for a specific collection
-   */
   async clearCollection(req, res) {
     try {
       const { collectionName } = req.params;

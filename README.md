@@ -20,6 +20,8 @@
 | `/rate-limit` | GET | Check GitHub API rate limit | Monitor API usage |
 | `/organizations` | GET | Get user's GitHub organizations | Fetch organizations data |
 | `/validate-token` | GET | Validate GitHub access token | Ensure token is still valid |
+| `/sync-jupyter` | POST | Runs a Test Sync against Jupyter org | Testing Purposes |
+
 
 ## Data Management (`/api/data`)
 
@@ -28,7 +30,6 @@
 | `/collections` | GET | Get list of available collections with counts | Populate "Entity Dropdown" with collections |
 | `/collection/:name` | GET | Get paginated data from specific collection | Display data in AG Grid table |
 | `/collection/:name/fields` | GET | Get field definitions for AG Grid columns | Dynamic column setup for AG Grid |
-| `/collection/:name/export` | GET | Export collection data (JSON/CSV) | Data export functionality |
 | `/collection/:name/stats` | GET | Get collection statistics | Display data metrics |
 | `/collection/:name/record/:id` | DELETE | Delete specific record | Data management |
 | `/collection/:name/clear` | DELETE | Clear entire collection | Data management |
