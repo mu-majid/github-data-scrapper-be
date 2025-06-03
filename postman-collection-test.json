@@ -1,0 +1,767 @@
+{
+  "info": {
+    "name": "GitHub OAuth Backend API",
+    "description": "Complete API collection for GitHub OAuth Backend with JWT authentication",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": ["{{base_url}}"],
+          "path": [""]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Initiate GitHub OAuth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/github",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "github"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GitHub OAuth Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/github/callback?code=AUTH_CODE&state=STATE_VALUE",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "github", "callback"],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "AUTH_CODE",
+                  "description": "Authorization code from GitHub"
+                },
+                {
+                  "key": "state",
+                  "value": "STATE_VALUE",
+                  "description": "State parameter for security"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check Auth Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Token",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/verify",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "verify"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Integration",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/remove",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "remove"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "GitHub Operations",
+      "item": [
+        {
+          "name": "Sync GitHub Data",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/github/sync",
+              "host": ["{{base_url}}"],
+              "path": ["api", "github", "sync"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Sync Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/github/sync-status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "github", "sync-status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Rate Limit",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/github/rate-limit",
+              "host": ["{{base_url}}"],
+              "path": ["api", "github", "rate-limit"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Organizations",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/github/organizations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "github", "organizations"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validate GitHub Token",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/github/validate-token",
+              "host": ["{{base_url}}"],
+              "path": ["api", "github", "validate-token"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Data Management",
+      "item": [
+        {
+          "name": "Get Collections",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/data/collections",
+              "host": ["{{base_url}}"],
+              "path": ["api", "data", "collections"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Collection Data",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/data/collection/organizations?page=1&limit=50&search=&sortBy=createdAt&sortOrder=desc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "data", "collection", "organizations"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number for pagination"
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Number of records per page"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search term"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Field to sort by"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "Sort order (asc/desc)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Repositories Data",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/data/collection/repositories?page=1&limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["api", "data", "collection", "repositories"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Commits Data",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/data/collection/commits?page=1&limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["api", "data", "collection", "commits"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Pull Requests Data",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/data/collection/pulls?page=1&limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["api", "data", "collection", "pulls"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Issues Data",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/data/collection/issues?page=1&limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["api", "data", "collection", "issues"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Users Data",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/data/collection/users?page=1&limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["api", "data", "collection", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Collection Fields",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/data/collection/organizations/fields",
+              "host": ["{{base_url}}"],
+              "path": ["api", "data", "collection", "organizations", "fields"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export Collection Data (JSON)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/data/collection/organizations/export?format=json",
+              "host": ["{{base_url}}"],
+              "path": ["api", "data", "collection", "organizations", "export"],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "json",
+                  "description": "Export format (json/csv)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export Collection Data (CSV)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/data/collection/organizations/export?format=csv",
+              "host": ["{{base_url}}"],
+              "path": ["api", "data", "collection", "organizations", "export"],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "csv",
+                  "description": "Export format (json/csv)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Collection Statistics",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/data/collection/organizations/stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "data", "collection", "organizations", "stats"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search All Collections",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/data/search?query=github&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "data", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "github",
+                  "description": "Search term"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Max results per collection"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Record",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/data/collection/organizations/record/RECORD_ID",
+              "host": ["{{base_url}}"],
+              "path": ["api", "data", "collection", "organizations", "record", "RECORD_ID"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Collection",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/data/collection/organizations/clear",
+              "host": ["{{base_url}}"],
+              "path": ["api", "data", "collection", "organizations", "clear"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-set JWT token from environment variable if available",
+          "if (pm.environment.get('jwt_token')) {",
+          "    pm.request.headers.add({",
+          "        key: 'Authorization',",
+          "        value: 'Bearer ' + pm.environment.get('jwt_token')",
+          "    });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-extract JWT token from auth responses",
+          "if (pm.response.code === 200) {",
+          "    try {",
+          "        const response = pm.response.json();",
+          "        if (response.token) {",
+          "            pm.environment.set('jwt_token', response.token);",
+          "            console.log('JWT token saved to environment');",
+          "        }",
+          "    } catch (e) {",
+          "        // Not a JSON response or no token field",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ]
+}
