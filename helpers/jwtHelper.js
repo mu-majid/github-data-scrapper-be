@@ -1,10 +1,10 @@
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 const JWT_EXPIRES_IN = '7d'; // Token expires in 7 days
 
-const generateToken = (payload) => {
+export const generateToken = (payload) => {
   try {
     return jwt.sign(payload, JWT_SECRET, { 
       expiresIn: JWT_EXPIRES_IN,
@@ -17,7 +17,7 @@ const generateToken = (payload) => {
   }
 };
 
-const verifyToken = (token) => {
+export const verifyToken = (token) => {
   try {
     return jwt.verify(token, JWT_SECRET, {
       issuer: 'github-oauth-app',
@@ -29,11 +29,11 @@ const verifyToken = (token) => {
   }
 };
 
-const generateState = () => {
+export const generateState = () => {
   return crypto.randomBytes(32).toString('hex');
 };
 
-const extractTokenFromHeader = (authHeader) => {
+export const extractTokenFromHeader = (authHeader) => {
   if (!authHeader) {
     return null;
   }
@@ -46,7 +46,7 @@ const extractTokenFromHeader = (authHeader) => {
   return parts[1];
 };
 
-const authenticateToken = (req, res, next) => {
+export const authenticateToken = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     const token = extractTokenFromHeader(authHeader);
@@ -82,12 +82,4 @@ const authenticateToken = (req, res, next) => {
       });
     }
   }
-};
-
-module.exports = {
-  generateToken,
-  verifyToken,
-  generateState,
-  extractTokenFromHeader,
-  authenticateToken
 };

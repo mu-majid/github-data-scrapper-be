@@ -1,10 +1,11 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const mongoSanitize = require('express-mongo-sanitize');
-require('dotenv').config();
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -34,9 +35,9 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/integrati
 .then(() => console.log('Connected to MongoDB'))
 .catch(err => console.error('MongoDB connection error:', err));
 
-const authRoutes = require('./routes/auth');
-const githubRoutes = require('./routes/github');
-const dataRoutes = require('./routes/data');
+import authRoutes from './routes/auth.js';
+import githubRoutes from './routes/github.js';
+import dataRoutes from './routes/data.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/github', githubRoutes);

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const organizationSchema = new mongoose.Schema({
   userId: { type: String, required: true },
@@ -383,11 +383,9 @@ const userSchema = new mongoose.Schema({
   collection: 'users'
 });
 
-module.exports = {
-  Organization: mongoose.model('Organization', organizationSchema),
-  Repository: mongoose.model('Repository', repositorySchema),
-  Commit: mongoose.model('Commit', commitSchema),
-  PullRequest: mongoose.model('PullRequest', pullRequestSchema),
-  Issue: mongoose.model('Issue', issueSchema),
-  User: mongoose.model('User', userSchema)
-};
+export const Organization = mongoose.model('Organization', organizationSchema)
+export const Repository = mongoose.model('Repository', repositorySchema)
+export const Commit = mongoose.model('Commit', commitSchema)
+export const PullRequest = mongoose.model('PullRequest', pullRequestSchema)
+export const Issue = mongoose.model('Issue', issueSchema)
+export const User = mongoose.model('User', userSchema)

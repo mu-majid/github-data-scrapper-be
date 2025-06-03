@@ -1,9 +1,6 @@
-const axios = require('axios');
+import axios from 'axios';
 
-/**
- * Make authenticated request to GitHub API
- */
-const githubAPI = async (url, accessToken, params = {}) => {
+export const githubAPI = async (url, accessToken, params = {}) => {
   try {
     const response = await axios.get(`https://api.github.com${url}`, {
       headers: {
@@ -14,58 +11,54 @@ const githubAPI = async (url, accessToken, params = {}) => {
       params: {
         per_page: 100,
         ...params
-      }
+      },
+      timeout: 30000
     });
 
-    return {
-      success: true,
-      data: response.data,
-      rateLimit: {
-        limit: response.headers['x-ratelimit-limit'],
-        remaining: response.headers['x-ratelimit-remaining'],
-        reset: response.headers['x-ratelimit-reset']
-      }
-    };
-  } catch (error) {
-    console.error(`GitHub API error for ${url}:`, error.response?.data || error.message);
-    return {
-      success: false,
-      error: error.response?.data || error.message,
-      status: error.response?.status
-    };
-  }
-};
+    const remaining = response.headers['x-ratelimit-remaining'];
+    const resetTime = response.headers['x-ratelimit-reset'];
 
-/**
- * Fetch all pages for paginated GitHub API endpoints
- */
-const fetchAllPages = async (url, accessToken, params = {}) => {
+    if (remaining && parseInt(remaining) < 100) {
+      console.warn(`GitHub API rate limit warning: ${remaining} requests remaining (resets at ${new Date(parseInt(resetTime) * 1000)})`);
+    }
+
+    return response.data;
+  } catch (error) {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || error.message;
+
+    if (status === 403 && message.includes('rate limit')) {
+      console.error('GitHub API rate limit exceeded');
+      throw new Error('GitHub API rate limit exceeded. Please try again later.');
+    }
+
+    console.error(`GitHub API error for ${url}:`, message);
+    throw error;
+  }
+}
+
+export const fetchAllPages = async (url, accessToken, params = {}, maxPages = null) => {
   let allData = [];
   let page = 1;
   let hasNextPage = true;
 
-  while (hasNextPage) {
+  while (hasNextPage && (maxPages === null || page <= maxPages)) {
     try {
-      const result = await githubAPI(url, accessToken, { ...params, page });
-      
-      if (!result.success) {
-        console.error(`Error fetching page ${page} for ${url}:`, result.error);
-        break;
-      }
+      const data = await this.githubAPI(url, accessToken, { ...params, page });
 
-      const data = result.data;
       if (Array.isArray(data) && data.length > 0) {
         allData = allData.concat(data);
+        console.log(` Page ${page}: ${data.length} items (total: ${allData.length})`);
         page++;
-        hasNextPage = data.length === 100; // GitHub returns max 100 per page
-        
-        // Log rate limit info
-        if (result.rateLimit && result.rateLimit.remaining < 100) {
-          console.warn(`GitHub API rate limit warning: ${result.rateLimit.remaining} requests remaining`);
-        }
+        hasNextPage = data.length === 100;
       } else {
         hasNextPage = false;
       }
+
+      if (hasNextPage) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
     } catch (error) {
       console.error(`Error fetching page ${page} for ${url}:`, error.message);
       hasNextPage = false;
@@ -73,85 +66,44 @@ const fetchAllPages = async (url, accessToken, params = {}) => {
   }
 
   return allData;
-};
+}
 
-/**
- * Validate GitHub access token
- */
-const validateToken = async (accessToken) => {
+export const validateToken = async (accessToken) => {
   const result = await githubAPI('/user', accessToken);
   return result.success;
 };
 
-/**
- * Get user's GitHub organizations
- */
-const getUserOrganizations = async (accessToken) => {
+export const getUserOrganizations = async (accessToken) => {
   const result = await githubAPI('/user/orgs', accessToken);
   return result.success ? result.data : [];
 };
 
-/**
- * Get organization repositories
- */
-const getOrgRepositories = async (orgLogin, accessToken) => {
+export const getOrgRepositories = async (orgLogin, accessToken) => {
   return await fetchAllPages(`/orgs/${orgLogin}/repos`, accessToken);
 };
 
-/**
- * Get repository commits
- */
-const getRepositoryCommits = async (repoFullName, accessToken) => {
+export const getRepositoryCommits = async (repoFullName, accessToken) => {
   return await fetchAllPages(`/repos/${repoFullName}/commits`, accessToken);
 };
 
-/**
- * Get repository pull requests
- */
-const getRepositoryPulls = async (repoFullName, accessToken) => {
+export const getRepositoryPulls = async (repoFullName, accessToken) => {
   return await fetchAllPages(`/repos/${repoFullName}/pulls`, accessToken, { state: 'all' });
 };
 
-/**
- * Get repository issues
- */
-const getRepositoryIssues = async (repoFullName, accessToken) => {
+export const getRepositoryIssues = async (repoFullName, accessToken) => {
   return await fetchAllPages(`/repos/${repoFullName}/issues`, accessToken, { state: 'all' });
 };
 
-/**
- * Get organization members
- */
-const getOrganizationMembers = async (orgLogin, accessToken) => {
+export const getOrganizationMembers = async (orgLogin, accessToken) => {
   return await fetchAllPages(`/orgs/${orgLogin}/members`, accessToken);
 };
 
-/**
- * Get user details
- */
-const getUserDetails = async (username, accessToken) => {
+export const getUserDetails = async (username, accessToken) => {
   const result = await githubAPI(`/users/${username}`, accessToken);
   return result.success ? result.data : null;
 };
 
-/**
- * Rate limit helper
- */
-const checkRateLimit = async (accessToken) => {
+export const checkRateLimit = async (accessToken) => {
   const result = await githubAPI('/rate_limit', accessToken);
   return result.success ? result.data : null;
-};
-
-module.exports = {
-  githubAPI,
-  fetchAllPages,
-  validateToken,
-  getUserOrganizations,
-  getOrgRepositories,
-  getRepositoryCommits,
-  getRepositoryPulls,
-  getRepositoryIssues,
-  getOrganizationMembers,
-  getUserDetails,
-  checkRateLimit
 };

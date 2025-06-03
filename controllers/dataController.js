@@ -1,5 +1,4 @@
-const { Organization, Repository, Commit, PullRequest, Issue, User } = require('../models/GithubData');
-
+import { Organization, Repository, Commit, PullRequest, Issue, User } from '../models/GithubData.js';
 class DataController {
 
 
@@ -299,7 +298,6 @@ class DataController {
       const searchResults = await Promise.all(
         models.map(async ({ name, model }) => {
           try {
-            // Get searchable string fields
             const schemaFields = Object.keys(model.schema.paths);
             const searchableFields = schemaFields.filter(field => 
               model.schema.paths[field].instance === 'String' && 
@@ -485,4 +483,4 @@ class DataController {
   }
 }
 
-module.exports = new DataController();
+export default new DataController();

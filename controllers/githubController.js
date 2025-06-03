@@ -1,91 +1,38 @@
-const axios = require('axios');
-const GithubIntegration = require('../models/GithubIntegration');
-const { Organization, Repository, Commit, PullRequest, Issue, User } = require('../models/GithubData');
+import GithubIntegration from '../models/GithubIntegration.js';
+import { Organization, Repository, Commit, PullRequest, Issue, User } from '../models/GithubData.js';
+import { 
+  githubAPI, 
+  fetchAllPages, 
+  getOrgRepositories, 
+  getOrganizationMembers, 
+  getRepositoryCommits, 
+  getRepositoryIssues, 
+  getRepositoryPulls, 
+  getUserDetails, 
+  getUserOrganizations,
+  checkRateLimit,
+  validateToken,
+  // for testing jupyter
+  githubAPI,
+  fetchAllPages
+} from '../helpers/githubHelper.js'
 
 class GitHubController {
-
-  async githubAPI(url, accessToken, params = {}) {
-    try {
-      const response = await axios.get(`https://api.github.com${url}`, {
-        headers: {
-          'Authorization': `token ${accessToken}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'GitHub-OAuth-Integration'
-        },
-        params: {
-          per_page: 100, 
-          ...params
-        },
-        timeout: 30000 
-      });
-
-      const remaining = response.headers['x-ratelimit-remaining'];
-      const resetTime = response.headers['x-ratelimit-reset'];
-      
-      if (remaining && parseInt(remaining) < 100) {
-        console.warn(`GitHub API rate limit warning: ${remaining} requests remaining (resets at ${new Date(parseInt(resetTime) * 1000)})`);
-      }
-
-      return response.data;
-    } catch (error) {
-      const status = error.response?.status;
-      const message = error.response?.data?.message || error.message;
-      
-      if (status === 403 && message.includes('rate limit')) {
-        console.error('GitHub API rate limit exceeded');
-        throw new Error('GitHub API rate limit exceeded. Please try again later.');
-      }
-      
-      console.error(`GitHub API error for ${url}:`, message);
-      throw error;
-    }
-  }
-
-  async fetchAllPages(url, accessToken, params = {}, maxPages = null) {
-    let allData = [];
-    let page = 1;
-    let hasNextPage = true;
-
-    while (hasNextPage && (maxPages === null || page <= maxPages)) {
-      try {
-        const data = await this.githubAPI(url, accessToken, { ...params, page });
-        
-        if (Array.isArray(data) && data.length > 0) {
-          allData = allData.concat(data);
-          console.log(` Page ${page}: ${data.length} items (total: ${allData.length})`);
-          page++;
-          hasNextPage = data.length === 100;
-        } else {
-          hasNextPage = false;
-        }
-
-        if (hasNextPage) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-      } catch (error) {
-        console.error(`Error fetching page ${page} for ${url}:`, error.message);
-        hasNextPage = false;
-      }
-    }
-
-    return allData;
-  }
 
   async syncGithubData(req, res) {
     try {
       const { accessToken, userId } = req.githubIntegration;
       const syncStartTime = new Date();
-      const organizations = await this.githubAPI('/user/orgs', accessToken);
-      
+      const organizations = await getUserOrganizations(accessToken);
+
       if (organizations.length > 0) {
         const orgOperations = organizations.map(org => ({
           updateOne: {
             filter: { userId, id: org.id },
-            update: { 
-              $set: { 
-                ...org, 
-                userId, 
+            update: {
+              $set: {
+                ...org,
+                userId,
                 organizationId: org.id,
                 updatedAt: new Date()
               }
@@ -107,16 +54,16 @@ class GitHubController {
         console.log(`\n Processing organization: ${org.login}`);
 
         try {
-          const repos = await this.fetchAllPages(`/orgs/${org.login}/repos`, accessToken);
+          const repos = await getOrgRepositories(org.login, accessToken);
           totalRepos += repos.length;
           if (repos.length > 0) {
             const repoOperations = repos.map(repo => ({
               updateOne: {
                 filter: { userId, id: repo.id },
-                update: { 
-                  $set: { 
-                    ...repo, 
-                    userId, 
+                update: {
+                  $set: {
+                    ...repo,
+                    userId,
                     organizationId: org.id,
                     updatedAt: new Date()
                   }
@@ -133,20 +80,20 @@ class GitHubController {
             console.log(`Processing repository: ${repo.name}`);
 
             const [commits, pulls, issues] = await Promise.allSettled([
-              this.fetchAllPages(`/repos/${repo.full_name}/commits`, accessToken),
-              this.fetchAllPages(`/repos/${repo.full_name}/pulls`, accessToken, { state: 'all' }),
-              this.fetchAllPages(`/repos/${repo.full_name}/issues`, accessToken, { state: 'all' })
+              getRepositoryCommits(repo.full_name, accessToken),
+              getRepositoryPulls(repo.full_name, accessToken, { state: 'all' }),
+              getRepositoryIssues(repo.full_name, accessToken, { state: 'all' })
             ]);
             if (commits.status === 'fulfilled' && commits.value.length > 0) {
               totalCommits += commits.value.length;
               const commitOperations = commits.value.map(commit => ({
                 updateOne: {
                   filter: { userId, sha: commit.sha },
-                  update: { 
-                    $set: { 
-                      ...commit, 
-                      userId, 
-                      organizationId: org.id, 
+                  update: {
+                    $set: {
+                      ...commit,
+                      userId,
+                      organizationId: org.id,
                       repositoryId: repo.id,
                       updatedAt: new Date()
                     }
@@ -162,11 +109,11 @@ class GitHubController {
               const pullOperations = pulls.value.map(pull => ({
                 updateOne: {
                   filter: { userId, id: pull.id },
-                  update: { 
-                    $set: { 
-                      ...pull, 
-                      userId, 
-                      organizationId: org.id, 
+                  update: {
+                    $set: {
+                      ...pull,
+                      userId,
+                      organizationId: org.id,
                       repositoryId: repo.id,
                       updatedAt: new Date()
                     }
@@ -184,11 +131,11 @@ class GitHubController {
                 const issueOperations = realIssues.map(issue => ({
                   updateOne: {
                     filter: { userId, id: issue.id },
-                    update: { 
-                      $set: { 
-                        ...issue, 
-                        userId, 
-                        organizationId: org.id, 
+                    update: {
+                      $set: {
+                        ...issue,
+                        userId,
+                        organizationId: org.id,
                         repositoryId: repo.id,
                         updatedAt: new Date()
                       }
@@ -203,7 +150,7 @@ class GitHubController {
           }
 
           try {
-            const members = await this.fetchAllPages(`/orgs/${org.login}/members`, accessToken);
+            const members = await getOrganizationMembers(org.login, accessToken);
             totalUsers += members.length;
 
             const batchSize = 10;
@@ -211,7 +158,7 @@ class GitHubController {
               const batch = members.slice(i, i + batchSize);
               const userPromises = batch.map(async (member) => {
                 try {
-                  const userDetails = await this.githubAPI(`/users/${member.login}`, accessToken);
+                  const userDetails = await getUserDetails(member.login, accessToken);
                   return User.findOneAndUpdate(
                     { userId, id: member.id },
                     { ...userDetails, userId, organizationId: org.id },
@@ -305,7 +252,7 @@ class GitHubController {
   async getRateLimit(req, res) {
     try {
       const { accessToken } = req.githubIntegration;
-      const rateLimit = await this.githubAPI('/rate_limit', accessToken);
+      const rateLimit = await checkRateLimit(accessToken);
 
       res.json({
         success: true,
@@ -324,7 +271,7 @@ class GitHubController {
   async getOrganizations(req, res) {
     try {
       const { accessToken } = req.githubIntegration;
-      const organizations = await this.githubAPI('/user/orgs', accessToken);
+      const organizations = await getOrganizations(accessToken);
 
       res.json({
         success: true,
@@ -343,7 +290,7 @@ class GitHubController {
   async validateToken(req, res) {
     try {
       const { accessToken } = req.githubIntegration;
-      const user = await this.githubAPI('/user', accessToken);
+      const user = await validateToken('/user', accessToken);
 
       res.json({
         success: true,
@@ -380,8 +327,8 @@ class GitHubController {
       let totalUsers = 0;
 
       console.log('\n Step 1: Fetching Jupyter organization...');
-      const org = await this.githubAPI('/orgs/jupyter', accessToken);
-      
+      const org = await githubAPI('/orgs/jupyter', accessToken);
+
       await Organization.findOneAndUpdate(
         { userId, id: org.id },
         { ...org, userId, organizationId: org.id },
@@ -392,9 +339,9 @@ class GitHubController {
       console.log('\n Step 2: Processing target repositories...');
       for (const repoFullName of targetRepos) {
         console.log(`\n--- Processing ${repoFullName} ---`);
-        
+
         try {
-          const repo = await this.githubAPI(`/repos/${repoFullName}`, accessToken);
+          const repo = await githubAPI(`/repos/${repoFullName}`, accessToken);
           totalRepos++;
 
           await Repository.findOneAndUpdate(
@@ -406,14 +353,14 @@ class GitHubController {
 
           console.log(`📝 Fetching recent commits for ${repo.name}...`);
           const commits = await this.fetchAllPages(
-            `/repos/${repoFullName}/commits`, 
-            accessToken, 
-            { per_page: 100 }, 
-            2 // Max 2 pages = ~200 commits
+            `/repos/${repoFullName}/commits`,
+            accessToken,
+            { per_page: 100 },
+            4 // Max 4 page
           );
           totalCommits += commits.length;
 
-          const commitPromises = commits.map(commit => 
+          const commitPromises = commits.map(commit =>
             Commit.findOneAndUpdate(
               { userId, sha: commit.sha },
               { ...commit, userId, organizationId: org.id, repositoryId: repo.id },
@@ -424,15 +371,15 @@ class GitHubController {
           console.log(` ${commits.length} commits stored`);
 
           console.log(` Fetching recent pull requests for ${repo.name}...`);
-          const pulls = await this.fetchAllPages(
-            `/repos/${repoFullName}/pulls`, 
-            accessToken, 
-            { state: 'all', sort: 'updated', direction: 'desc', per_page: 100 }, 
-            1 // Max 1 page = ~100 PRs
+          const pulls = await fetchAllPages(
+            `/repos/${repoFullName}/pulls`,
+            accessToken,
+            { state: 'all', sort: 'updated', direction: 'desc', per_page: 100 },
+            3 // Max 3 page = ~100 PRs
           );
           totalPulls += pulls.length;
 
-          const pullPromises = pulls.map(pull => 
+          const pullPromises = pulls.map(pull =>
             PullRequest.findOneAndUpdate(
               { userId, id: pull.id },
               { ...pull, userId, organizationId: org.id, repositoryId: repo.id },
@@ -443,17 +390,17 @@ class GitHubController {
           console.log(` ${pulls.length} pull requests stored`);
 
           console.log(`🐛 Fetching recent issues for ${repo.name}...`);
-          const issues = await this.fetchAllPages(
-            `/repos/${repoFullName}/issues`, 
-            accessToken, 
-            { state: 'all', sort: 'updated', direction: 'desc', per_page: 100 }, 
-            1 // Max 1 page = ~100 items
+          const issues = await fetchAllPages(
+            `/repos/${repoFullName}/issues`,
+            accessToken,
+            { state: 'all', sort: 'updated', direction: 'desc', per_page: 100 },
+            3 // Max 1 page = ~100 items
           );
-          
+
           const realIssues = issues.filter(issue => !issue.pull_request);
           totalIssues += realIssues.length;
 
-          const issuePromises = realIssues.map(issue => 
+          const issuePromises = realIssues.map(issue =>
             Issue.findOneAndUpdate(
               { userId, id: issue.id },
               { ...issue, userId, organizationId: org.id, repositoryId: repo.id },
@@ -471,12 +418,12 @@ class GitHubController {
 
       console.log('\n Step 3: Fetching organization members...');
       try {
-        const members = await this.githubAPI('/orgs/jupyter/members', accessToken, { per_page: 30 });
+        const members = await githubAPI('/orgs/jupyter/members', accessToken, { per_page: 30 });
         totalUsers = members.length;
-        
-        const userPromises = members.slice(0, 20).map(async (member) => {
+
+        const userPromises = members.slice(0, 30).map(async (member) => {
           try {
-            const userDetails = await this.githubAPI(`/users/${member.login}`, accessToken);
+            const userDetails = await githubAPI(`/users/${member.login}`, accessToken);
             return User.findOneAndUpdate(
               { userId, id: member.id },
               { ...userDetails, userId, organizationId: org.id },
@@ -490,7 +437,7 @@ class GitHubController {
 
         await Promise.all(userPromises);
         console.log(` ${Math.min(members.length, 20)} organization members stored`);
-        
+
       } catch (membersError) {
         console.error(' Error fetching organization members:', membersError.message);
       }
@@ -505,7 +452,7 @@ class GitHubController {
 
       // Final summary
       console.log('\n🎉 Jupyter Test Data Sync Completed!');
-      console.log('=' .repeat(50));
+      console.log('='.repeat(50));
       console.log(`📊 Final Statistics:`);
       console.log(`   Organizations: 1 (jupyter)`);
       console.log(`   Repositories: ${totalRepos}`);
@@ -515,7 +462,7 @@ class GitHubController {
       console.log(`   Users: ${totalUsers}`);
       console.log(`   Duration: ${syncDuration.toFixed(2)} seconds`);
       console.log(`   Completed at: ${syncEndTime.toISOString()}`);
-      console.log('=' .repeat(50));
+      console.log('='.repeat(50));
 
       res.json({
         success: true,
@@ -542,5 +489,4 @@ class GitHubController {
     }
   }
 }
-
-module.exports = new GitHubController();
+export default new GitHubController();

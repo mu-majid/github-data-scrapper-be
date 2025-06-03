@@ -1,7 +1,7 @@
-const { body, param, query, validationResult } = require('express-validator');
-const { handleValidationErrors } = require('../helpers/validationHelper') 
+import { body, param, query } from 'express-validator';
+import { handleValidationErrors } from '../helpers/validationHelper.js';
 
-const validateGitHubIntegration = [
+export const validateGitHubIntegration = [
   body('access_token')
     .notEmpty()
     .isLength({ min: 10 })
@@ -20,8 +20,7 @@ const validateGitHubIntegration = [
   handleValidationErrors
 ];
 
-// Collection data validation
-const validateCollectionQuery = [
+export const validateCollectionQuery = [
   query('page')
     .optional()
     .isInt({ min: 1 })
@@ -52,17 +51,10 @@ const validateCollectionQuery = [
   handleValidationErrors
 ];
 
-// MongoDB ObjectId validation
-const validateObjectId = [
+export const validateObjectId = [
   param('id')
     .isMongoId()
     .withMessage('Invalid ID format'),
     
   handleValidationErrors
 ];
-
-module.exports = {
-  validateObjectId,
-  validateCollectionQuery,
-  validateGitHubIntegration
-}

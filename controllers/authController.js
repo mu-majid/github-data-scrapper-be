@@ -1,6 +1,6 @@
-const axios = require('axios');
-const GithubIntegration = require('../models/GithubIntegration');
-const { generateToken, generateState } = require('../helpers/jwtHelper');
+import axios from 'axios';
+import GithubIntegration from '../models/GithubIntegration.js';
+import { generateToken, generateState } from '../helpers/jwtHelper.js';
 /**
  * Followed this link from github docs
  * https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github
@@ -240,4 +240,4 @@ setInterval(() => {
   controller.cleanupExpiredStates();
 }, 10 * 60 * 1000);
 
-module.exports = new AuthController();
+export default new AuthController();
