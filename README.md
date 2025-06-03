@@ -42,6 +42,16 @@ MONGO_EXPRESS_USERNAME=admin
 MONGO_EXPRESS_PASSWORD=admin123
 ```
 
+## Future enhancements and improvements:
+- Input validation and sanitization (Joi, ajv, ...)
+- Better logging for tracing the operations on the server.
+- Central Error Handling (semi-exists now), with custom business-domain errors
+- Using Typescript for proper typing.
+- Enhancing the sync endpoint:
+    - Idea-1: Use stream pipelines 
+    - Idea-2: Fire and Forget endpoint and notify the client when done / client would long-poll the server.
+- Add testing (unit, integrations, e2e)
+
 ## Authentication Endpoints (`/api/auth`)
 
 | Endpoint | Method | Purpose | Requirement Served |
