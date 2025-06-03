@@ -1,6 +1,9 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
 require('dotenv').config();
 
 const app = express();
@@ -13,9 +16,17 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
+app.use(helmet());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+const limiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
+
+app.use(mongoSanitize());
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/integrations', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -37,10 +48,29 @@ app.get('/', (req, res) => {
 
 app.use((error, req, res, next) => {
   console.error('Error:', error);
-  res.status(500).json({ 
-    success: false, 
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? error.message : undefined
+  
+  // Validation errors
+  if (error.name === 'ValidationError') {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation failed',
+      errors: Object.values(error.errors).map(err => err.message)
+    });
+  }
+  
+  // MongoDB duplicate key error
+  if (error.code === 11000) {
+    return res.status(400).json({
+      success: false,
+      message: 'Duplicate entry',
+      field: Object.keys(error.keyValue)[0]
+    });
+  }
+  
+  // Default error
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error'
   });
 });
 

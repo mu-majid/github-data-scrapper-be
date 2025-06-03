@@ -2,6 +2,8 @@ const express = require('express');
 const dataController = require('../controllers/dataController');
 const { authenticateToken } = require('../helpers/jwtHelper');
 const GithubIntegration = require('../models/GithubIntegration');
+const { validateCollectionQuery } = require('../validation/schema');
+
 const router = express.Router();
 
 // Middleware to check authentication and get GitHub integration
@@ -30,7 +32,7 @@ router.use(authenticateToken);
 router.use(requireAuth);
 
 router.get('/collections', dataController.getCollections);
-router.get('/collection/:collectionName', dataController.getCollectionData);
+router.get('/collection/:collectionName', validateCollectionQuery, dataController.getCollectionData);
 router.get('/collection/:collectionName/fields', dataController.getCollectionFields.bind(dataController));
 router.get('/collection/:collectionName/stats', dataController.getCollectionStats);
 router.delete('/collection/:collectionName/record/:recordId', dataController.deleteRecord);
