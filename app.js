@@ -3,7 +3,6 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import mongoSanitize from 'express-mongo-sanitize';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -27,7 +26,6 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-app.use(mongoSanitize());
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/integrations', {
   useNewUrlParser: true,
   useUnifiedTopology: true,

@@ -44,11 +44,10 @@ export const fetchAllPages = async (url, accessToken, params = {}, maxPages = nu
 
   while (hasNextPage && (maxPages === null || page <= maxPages)) {
     try {
-      const data = await this.githubAPI(url, accessToken, { ...params, page });
+      const data = await githubAPI(url, accessToken, { ...params, page });
 
       if (Array.isArray(data) && data.length > 0) {
         allData = allData.concat(data);
-        console.log(` Page ${page}: ${data.length} items (total: ${allData.length})`);
         page++;
         hasNextPage = data.length === 100;
       } else {
@@ -74,8 +73,7 @@ export const validateToken = async (accessToken) => {
 };
 
 export const getUserOrganizations = async (accessToken) => {
-  const result = await githubAPI('/user/orgs', accessToken);
-  return result.success ? result.data : [];
+  return await githubAPI('/user/orgs', accessToken);
 };
 
 export const getOrgRepositories = async (orgLogin, accessToken) => {

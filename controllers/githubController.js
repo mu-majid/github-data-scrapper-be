@@ -1,8 +1,6 @@
 import GithubIntegration from '../models/GithubIntegration.js';
 import { Organization, Repository, Commit, PullRequest, Issue, User } from '../models/GithubData.js';
 import { 
-  githubAPI, 
-  fetchAllPages, 
   getOrgRepositories, 
   getOrganizationMembers, 
   getRepositoryCommits, 
@@ -352,11 +350,11 @@ class GitHubController {
           console.log(` Repository stored: ${repo.name} (⭐ ${repo.stargazers_count})`);
 
           console.log(`📝 Fetching recent commits for ${repo.name}...`);
-          const commits = await this.fetchAllPages(
+          const commits = await fetchAllPages(
             `/repos/${repoFullName}/commits`,
             accessToken,
             { per_page: 100 },
-            4 // Max 4 page
+            2 // Max 2 page
           );
           totalCommits += commits.length;
 
@@ -375,7 +373,7 @@ class GitHubController {
             `/repos/${repoFullName}/pulls`,
             accessToken,
             { state: 'all', sort: 'updated', direction: 'desc', per_page: 100 },
-            3 // Max 3 page = ~100 PRs
+            1 // Max 3 page = ~100 PRs
           );
           totalPulls += pulls.length;
 
@@ -394,7 +392,7 @@ class GitHubController {
             `/repos/${repoFullName}/issues`,
             accessToken,
             { state: 'all', sort: 'updated', direction: 'desc', per_page: 100 },
-            3 // Max 1 page = ~100 items
+            1 // Max 1 page = ~100 items
           );
 
           const realIssues = issues.filter(issue => !issue.pull_request);
