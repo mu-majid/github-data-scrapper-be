@@ -44,8 +44,6 @@ class DataController {
     try {
       const { collectionName } = req.params;
       const { page = 1, limit = 50, search = '', sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
-
-      // Map collection names to models
       const modelMap = {
         'organizations': Organization,
         'repositories': Repository,
@@ -62,11 +60,8 @@ class DataController {
           message: 'Invalid collection name'
         });
       }
-
-      // Build query
       const query = { userId: req.githubIntegration.userId };
 
-      // Add search functionality
       if (search) {
         // Get all fields from the model schema
         const schemaFields = Object.keys(Model.schema.paths);
@@ -82,13 +77,9 @@ class DataController {
           }));
         }
       }
-
-      // Calculate pagination
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const sortOptions = {};
       sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
-
-      // Execute query
       const [data, total] = await Promise.all([
         Model.find(query)
           .sort(sortOptions)
@@ -97,8 +88,6 @@ class DataController {
           .lean(),
         Model.countDocuments(query)
       ]);
-
-      // Get field definitions for the grid
       const sampleDoc = await Model.findOne(query).lean();
       const fields = sampleDoc ? Object.keys(sampleDoc).filter(key => 
         !key.startsWith('_') && key !== '__v' && key !== 'userId'
@@ -232,8 +221,6 @@ class DataController {
       }
 
       const userId = req.githubIntegration.userId;
-
-      // Get basic statistics
       const [total, recent] = await Promise.all([
         Model.countDocuments({ userId }),
         Model.countDocuments({ 
@@ -241,8 +228,6 @@ class DataController {
           createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Last 24 hours
         })
       ]);
-
-      // Get date range if documents exist
       let dateRange = null;
       if (total > 0) {
         const [oldest, newest] = await Promise.all([
