@@ -1,6 +1,7 @@
 # Backend API Endpoints Summary
 
 ## How to Run it:
+- Run `npm install`
 - Make sure you have Docker installed
 - make sure you set up the `.env` and `.env.docker` files properly
 - open a terminal in the project's directory, then run `make build`
