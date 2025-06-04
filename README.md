@@ -69,9 +69,6 @@ MONGO_EXPRESS_PASSWORD=admin123
 |----------|--------|---------|-------------------|
 | `/sync` | POST | Sync all GitHub data (orgs, repos, commits, pulls, issues, users) | Fetch and store all required GitHub data |
 | `/sync-status` | GET | Get last sync time and data counts | Display sync status and data statistics |
-| `/rate-limit` | GET | Check GitHub API rate limit | Monitor API usage |
-| `/organizations` | GET | Get user's GitHub organizations | Fetch organizations data |
-| `/validate-token` | GET | Validate GitHub access token | Ensure token is still valid |
 | `/sync-jupyter` | POST | Runs a Test Sync against Jupyter org | Testing Purposes |
 
 
@@ -82,10 +79,6 @@ MONGO_EXPRESS_PASSWORD=admin123
 | `/collections` | GET | Get list of available collections with counts | Populate "Entity Dropdown" with collections |
 | `/collection/:name` | GET | Get paginated data from specific collection | Display data in AG Grid table |
 | `/collection/:name/fields` | GET | Get field definitions for AG Grid columns | Dynamic column setup for AG Grid |
-| `/collection/:name/stats` | GET | Get collection statistics | Display data metrics |
-| `/collection/:name/record/:id` | DELETE | Delete specific record | Data management |
-| `/collection/:name/clear` | DELETE | Clear entire collection | Data management |
-| `/search` | GET | Search across all collections | Global search functionality in AG Grid |
 
 ## Requirements Mapping
 
@@ -108,7 +101,7 @@ MONGO_EXPRESS_PASSWORD=admin123
 - Entity dropdown → `/api/data/collections`
 - AG Grid data display → `/api/data/collection/:name`
 - Dynamic columns → `/api/data/collection/:name/fields`
-- Search functionality → `/api/data/search`
+- Search functionality → `/api/data/collection/:name +  searchQuery` (On a diff branch there a functionality for search across all collections)
 - Filters and pagination → Built into collection endpoint
 
 All endpoints require JWT authentication except the initial OAuth endpoints, ensuring stateless operation as requested.

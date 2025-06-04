@@ -247,64 +247,6 @@ class GitHubController {
     }
   }
 
-  async getRateLimit(req, res) {
-    try {
-      const { accessToken } = req.githubIntegration;
-      const rateLimit = await checkRateLimit(accessToken);
-
-      res.json({
-        success: true,
-        rateLimit
-      });
-
-    } catch (error) {
-      console.error(' Rate limit error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error getting rate limit information'
-      });
-    }
-  }
-
-  async getOrganizations(req, res) {
-    try {
-      const { accessToken } = req.githubIntegration;
-      const organizations = await getOrganizations(accessToken);
-
-      res.json({
-        success: true,
-        organizations
-      });
-
-    } catch (error) {
-      console.error(' Organizations error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error fetching organizations'
-      });
-    }
-  }
-
-  async validateToken(req, res) {
-    try {
-      const { accessToken } = req.githubIntegration;
-      const user = await validateToken('/user', accessToken);
-
-      res.json({
-        success: true,
-        valid: true,
-        user
-      });
-
-    } catch (error) {
-      console.error('Token validation error:', error);
-      res.status(401).json({
-        success: false,
-        valid: false,
-        message: 'Invalid or expired GitHub token'
-      });
-    }
-  }
   // For Testing Purposes
   async syncJupyterTestData(req, res) {
     try {
@@ -349,12 +291,12 @@ class GitHubController {
           );
           console.log(` Repository stored: ${repo.name} (⭐ ${repo.stargazers_count})`);
 
-          console.log(`📝 Fetching recent commits for ${repo.name}...`);
+          console.log(` Fetching recent commits for ${repo.name}...`);
           const commits = await fetchAllPages(
             `/repos/${repoFullName}/commits`,
             accessToken,
             { per_page: 100 },
-            2 // Max 2 page
+            4 // <--- control the numbers of synced data
           );
           totalCommits += commits.length;
 
@@ -373,7 +315,7 @@ class GitHubController {
             `/repos/${repoFullName}/pulls`,
             accessToken,
             { state: 'all', sort: 'updated', direction: 'desc', per_page: 100 },
-            1 // Max 3 page = ~100 PRs
+            3 // <--- control the numbers of synced data
           );
           totalPulls += pulls.length;
 
@@ -392,7 +334,7 @@ class GitHubController {
             `/repos/${repoFullName}/issues`,
             accessToken,
             { state: 'all', sort: 'updated', direction: 'desc', per_page: 100 },
-            1 // Max 1 page = ~100 items
+            3 // <--- control the numbers of synced data
           );
 
           const realIssues = issues.filter(issue => !issue.pull_request);
@@ -451,7 +393,7 @@ class GitHubController {
       // Final summary
       console.log('\n🎉 Jupyter Test Data Sync Completed!');
       console.log('='.repeat(50));
-      console.log(`📊 Final Statistics:`);
+      console.log(`   Final Statistics:`);
       console.log(`   Organizations: 1 (jupyter)`);
       console.log(`   Repositories: ${totalRepos}`);
       console.log(`   Commits: ${totalCommits}`);
