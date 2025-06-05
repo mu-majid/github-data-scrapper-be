@@ -15,10 +15,10 @@ NODE_ENV=development
 
 MONGODB_URI=mongodb://localhost:27017/integrations
 
-JWT_SECRET=your-jwt-secret
+JWT_SECRET=asd12345
 
-GITHUB_CLIENT_ID=your-gh-client-id
-GITHUB_CLIENT_SECRET=your-gh-secret
+GITHUB_CLIENT_ID=Ov23liiejBNFsbBp7Trp
+GITHUB_CLIENT_SECRET=1ab3761ac5bf717134c12da2d8022ae1f3ad66f7
 GITHUB_CALLBACK_URL=http://localhost:3000/api/auth/github/callback
 
 FRONTEND_URL=http://localhost:4200
@@ -31,10 +31,10 @@ MONGO_ROOT_USERNAME=admin
 MONGO_ROOT_PASSWORD=password123
 MONGO_DATABASE=integrations
 
-JWT_SECRET=your-jwt-secret
+JWT_SECRET=asd12345
 
-GITHUB_CLIENT_ID=your-gh-client-id
-GITHUB_CLIENT_SECRET=your-gh-secret
+GITHUB_CLIENT_ID=Ov23liiejBNFsbBp7Trp
+GITHUB_CLIENT_SECRET=1ab3761ac5bf717134c12da2d8022ae1f3ad66f7
 GITHUB_CALLBACK_URL=http://localhost:3000/api/auth/github/callback
 
 FRONTEND_URL=http://localhost:4200
