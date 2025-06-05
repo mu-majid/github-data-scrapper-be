@@ -1,6 +1,15 @@
 import { Organization, Repository, Commit, PullRequest, Issue, User } from '../models/GithubData.js';
-class DataController {
+import { extractAllFields, flattenDocuments, extractAllFieldsFromDocument, flattenDocumentForResponse } from '../helpers/dataViewHelper.js';
 
+const modelMap = {
+  'organizations': Organization,
+  'repositories': Repository,
+  'commits': Commit,
+  'pulls': PullRequest,
+  'issues': Issue,
+  'users': User
+};
+class DataController {
 
   async getCollections(req, res) {
     try {
@@ -15,8 +24,8 @@ class DataController {
 
       const collectionsWithCounts = await Promise.all(
         collections.map(async (collection) => {
-          const count = await collection.model.countDocuments({ 
-            userId: req.githubIntegration.userId 
+          const count = await collection.model.countDocuments({
+            userId: req.githubIntegration.userId
           });
           return {
             name: collection.name,
@@ -44,14 +53,6 @@ class DataController {
     try {
       const { collectionName } = req.params;
       const { page = 1, limit = 50, search = '', sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
-      const modelMap = {
-        'organizations': Organization,
-        'repositories': Repository,
-        'commits': Commit,
-        'pulls': PullRequest,
-        'issues': Issue,
-        'users': User
-      };
 
       const Model = modelMap[collectionName];
       if (!Model) {
@@ -60,26 +61,28 @@ class DataController {
           message: 'Invalid collection name'
         });
       }
+
       const query = { userId: req.githubIntegration.userId };
 
       if (search) {
-        // Get all fields from the model schema
         const schemaFields = Object.keys(Model.schema.paths);
-        const searchableFields = schemaFields.filter(field => 
-          Model.schema.paths[field].instance === 'String' && 
-          !field.startsWith('_') && 
+        const searchableFields = schemaFields.filter(field =>
+          Model.schema.paths[field].instance === 'String' &&
+          !field.startsWith('_') &&
           field !== '__v'
         );
-
+  
         if (searchableFields.length > 0) {
           query.$or = searchableFields.map(field => ({
             [field]: { $regex: search, $options: 'i' }
           }));
         }
       }
+      
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const sortOptions = {};
       sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      
       const [data, total] = await Promise.all([
         Model.find(query)
           .sort(sortOptions)
@@ -88,14 +91,27 @@ class DataController {
           .lean(),
         Model.countDocuments(query)
       ]);
+  
+      // Enhanced field extraction with nested object support
       const sampleDoc = await Model.findOne(query).lean();
-      const fields = sampleDoc ? Object.keys(sampleDoc).filter(key => 
-        !key.startsWith('_') && key !== '__v' && key !== 'userId'
-      ) : [];
-
+      let fields = [];
+      
+      if (sampleDoc) {
+        // Extract all fields including nested ones
+        fields = extractAllFieldsFromDocument(sampleDoc);
+        
+        // Filter out MongoDB internal fields and userId
+        fields = fields.filter(field => 
+          !field.startsWith('_') && 
+          field !== '__v' && 
+          field !== 'userId'
+        );
+      }
+      const flattenedData = data.map(doc => flattenDocumentForResponse(doc));
+  
       res.json({
         success: true,
-        data,
+        data: flattenedData,
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
@@ -107,7 +123,7 @@ class DataController {
         sortBy,
         sortOrder
       });
-
+  
     } catch (error) {
       console.error('Collection data error:', error);
       res.status(500).json({
@@ -119,88 +135,52 @@ class DataController {
 
   async getCollectionFields(req, res) {
     try {
-      const { collectionName } = req.params;
-
-      const modelMap = {
-        'organizations': Organization,
-        'repositories': Repository,
-        'commits': Commit,
-        'pulls': PullRequest,
-        'issues': Issue,
-        'users': User
-      };
-
+      const { name: collectionName } = req.params;
+      const { sample = 10 } = req.query;
+      
       const Model = modelMap[collectionName];
       if (!Model) {
-        return res.status(400).json({
+        return res.status(404).json({
           success: false,
-          message: 'Invalid collection name'
+          error: `Collection '${collectionName}' not found`
         });
       }
-
-      // Get a sample document to determine field types
-      const sampleDoc = await Model.findOne({ userId: req.githubIntegration.userId }).lean();
       
-      if (!sampleDoc) {
+      const sampleDocs = await Model
+        .find({})
+        .limit(parseInt(sample))
+        .lean();
+      
+      if (sampleDocs.length === 0) {
         return res.json({
           success: true,
+          collection: collectionName,
           fields: [],
-          message: 'No data available for this collection'
+          message: 'Collection is empty'
         });
       }
-
-      // Create field definitions for AG Grid
-      const fields = Object.keys(sampleDoc)
-        .filter(key => !key.startsWith('_') && key !== '__v' && key !== 'userId')
-        .map(key => {
-          const value = sampleDoc[key];
-          let type = 'string';
-          let cellRenderer = null;
-          
-          if (typeof value === 'number') {
-            type = 'number';
-          } else if (value instanceof Date) {
-            type = 'date';
-            cellRenderer = 'dateRenderer';
-          } else if (typeof value === 'boolean') {
-            type = 'boolean';
-            cellRenderer = 'booleanRenderer';
-          } else if (Array.isArray(value)) {
-            type = 'array';
-            cellRenderer = 'arrayRenderer';
-          } else if (typeof value === 'object' && value !== null) {
-            type = 'object';
-            cellRenderer = 'objectRenderer';
-          }
-
-          return {
-            field: key,
-            headerName: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
-            type,
-            sortable: true,
-            filter: true,
-            resizable: true,
-            width: this.getColumnWidth(type, key),
-            cellRenderer
-          };
-        });
-
+      
+      const fields = extractAllFields(sampleDocs);
+      
       res.json({
         success: true,
-        fields
+        collection: collectionName,
+        fields,
+        sampleSize: sampleDocs.length,
+        totalFields: fields.length
       });
-
+      
     } catch (error) {
-      console.error('Fields error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error fetching field definitions'
+      console.error('Get collection fields error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to get collection fields',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
-  }
-
+  };
+  
   getColumnWidth(type, fieldName) {
-    // Specific field width mappings
     const fieldWidthMap = {
       'id': 100,
       'login': 120,
@@ -219,12 +199,10 @@ class DataController {
       'number': 80
     };
 
-    // Check for specific field name first
     if (fieldWidthMap[fieldName]) {
       return fieldWidthMap[fieldName];
     }
 
-    // Default widths by type
     switch (type) {
       case 'date':
         return 180;
