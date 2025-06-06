@@ -124,14 +124,14 @@ export const extractAllFieldsFromDocument = (document, prefix = '') => {
     } else if (Array.isArray(value)) {
       // Handle arrays - if array contains objects, extract fields from first element
       if (value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-        const nestedFields = this.extractAllFieldsFromDocument(value[0], fieldName);
+        const nestedFields = extractAllFieldsFromDocument(value[0], fieldName);
         fields.push(...nestedFields);
       } else {
         fields.push(fieldName);
       }
     } else if (typeof value === 'object') {
       // Recursively extract fields from nested objects
-      const nestedFields = this.extractAllFieldsFromDocument(value, fieldName);
+      const nestedFields = extractAllFieldsFromDocument(value, fieldName);
       fields.push(...nestedFields);
     } else {
       // Regular field (string, number, boolean, etc.)
@@ -158,14 +158,14 @@ export const flattenDocumentForResponse = (document, prefix = '') => {
     } else if (Array.isArray(value)) {
       // Handle arrays - store as JSON string or flatten first element if it's an object
       if (value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-        const flattenedFirst = this.flattenDocumentForResponse(value[0], fieldName);
+        const flattenedFirst = flattenDocumentForResponse(value[0], fieldName);
         Object.assign(flattened, flattenedFirst);
       } else {
         flattened[fieldName] = JSON.stringify(value);
       }
     } else if (typeof value === 'object') {
       // Recursively flatten nested objects
-      const flattenedNested = this.flattenDocumentForResponse(value, fieldName);
+      const flattenedNested = flattenDocumentForResponse(value, fieldName);
       Object.assign(flattened, flattenedNested);
     } else {
       // Regular field

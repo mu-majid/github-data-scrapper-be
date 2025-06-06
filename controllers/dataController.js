@@ -1,14 +1,6 @@
 import { Organization, Repository, Commit, PullRequest, Issue, User } from '../models/GithubData.js';
-import { extractAllFields, flattenDocuments, extractAllFieldsFromDocument, flattenDocumentForResponse } from '../helpers/dataViewHelper.js';
+import { extractAllFields, extractAllFieldsFromDocument, flattenDocumentForResponse } from '../helpers/dataViewHelper.js';
 
-const modelMap = {
-  'organizations': Organization,
-  'repositories': Repository,
-  'commits': Commit,
-  'pulls': PullRequest,
-  'issues': Issue,
-  'users': User
-};
 class DataController {
 
   async getCollections(req, res) {
@@ -51,6 +43,14 @@ class DataController {
 
   async getCollectionData(req, res) {
     try {
+      const modelMap = {
+        'organizations': Organization,
+        'repositories': Repository,
+        'commits': Commit,
+        'pulls': PullRequest,
+        'issues': Issue,
+        'users': User
+      };
       const { collectionName } = req.params;
       const { page = 1, limit = 50, search = '', sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
 
@@ -71,47 +71,50 @@ class DataController {
           !field.startsWith('_') &&
           field !== '__v'
         );
-  
+
         if (searchableFields.length > 0) {
           query.$or = searchableFields.map(field => ({
             [field]: { $regex: search, $options: 'i' }
           }));
         }
       }
-      
+
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const sortOptions = {};
       sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
-      
+
       const [data, total] = await Promise.all([
-        Model.find(query)
+        Model.find(query, { _id: 0 })
           .sort(sortOptions)
           .skip(skip)
           .limit(parseInt(limit))
           .lean(),
         Model.countDocuments(query)
       ]);
-  
+
       // Enhanced field extraction with nested object support
-      const sampleDoc = await Model.findOne(query).lean();
+      const sampleDoc = await Model.findOne(query, { _id: 0 }).lean();
       let fields = [];
-      
+
       if (sampleDoc) {
         // Extract all fields including nested ones
         fields = extractAllFieldsFromDocument(sampleDoc);
-        
+
         // Filter out MongoDB internal fields and userId
-        fields = fields.filter(field => 
-          !field.startsWith('_') && 
-          field !== '__v' && 
+        fields = fields.filter(field =>
+          !field.startsWith('_') &&
+          field !== '__v' &&
           field !== 'userId'
         );
       }
       const flattenedData = data.map(doc => flattenDocumentForResponse(doc));
-  
+      console.log('flattenedData : ', JSON.stringify(flattenedData, null, 2))
+      console.log('data : ', JSON.stringify(data, null, 2))
+
       res.json({
         success: true,
-        data: flattenedData,
+        data,
+        flattenedData,
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
@@ -123,7 +126,7 @@ class DataController {
         sortBy,
         sortOrder
       });
-  
+
     } catch (error) {
       console.error('Collection data error:', error);
       res.status(500).json({
@@ -135,22 +138,31 @@ class DataController {
 
   async getCollectionFields(req, res) {
     try {
-      const { name: collectionName } = req.params;
+      const modelMap = {
+        'organizations': Organization,
+        'repositories': Repository,
+        'commits': Commit,
+        'pulls': PullRequest,
+        'issues': Issue,
+        'users': User
+      };
+      const { collectionName } = req.params;
       const { sample = 10 } = req.query;
-      
+
       const Model = modelMap[collectionName];
+
       if (!Model) {
         return res.status(404).json({
           success: false,
           error: `Collection '${collectionName}' not found`
         });
       }
-      
+
       const sampleDocs = await Model
         .find({})
         .limit(parseInt(sample))
         .lean();
-      
+
       if (sampleDocs.length === 0) {
         return res.json({
           success: true,
@@ -159,9 +171,9 @@ class DataController {
           message: 'Collection is empty'
         });
       }
-      
+
       const fields = extractAllFields(sampleDocs);
-      
+
       res.json({
         success: true,
         collection: collectionName,
@@ -169,17 +181,17 @@ class DataController {
         sampleSize: sampleDocs.length,
         totalFields: fields.length
       });
-      
+
     } catch (error) {
       console.error('Get collection fields error:', error);
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         error: 'Failed to get collection fields',
         details: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   };
-  
+
   getColumnWidth(type, fieldName) {
     const fieldWidthMap = {
       'id': 100,

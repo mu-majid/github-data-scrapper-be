@@ -9,17 +9,18 @@ import {
 
 import { getSearchableCollections } from '../helpers/githubHelper.js';
 
-const modelMap = {
-  'organizations': Organization,
-  'repositories': Repository,
-  'commits': Commit,
-  'pulls': PullRequest,
-  'issues': Issue,
-  'users': User
-};
+
 
 export const globalSearch = async (req, res) => {
   try {
+    const modelMap = {
+      'organizations': Organization,
+      'repositories': Repository,
+      'commits': Commit,
+      'pulls': PullRequest,
+      'issues': Issue,
+      'users': User
+    };
     const { query, page = 1, limit = 50, collections } = req.query;
 
     if (!query || query.trim() === '') {
@@ -31,6 +32,8 @@ export const globalSearch = async (req, res) => {
 
     const searchCollections = collections ?
       collections.split(',') : getSearchableCollections();
+
+    console.log('searchCollections ', searchCollections)
 
     const searchPromises = searchCollections.map(async (collectionName) => {
       try {
@@ -70,6 +73,7 @@ export const globalSearch = async (req, res) => {
     });
 
     const results = await Promise.all(searchPromises);
+    console.log('global ssearch ', results)
     const totalResults = results.reduce((sum, result) => sum + result.count, 0);
 
     res.json({
@@ -105,6 +109,14 @@ export const advancedFilter = async (req, res) => {
       sortOrder = 'asc'
     } = req.body;
 
+    const modelMap = {
+      'organizations': Organization,
+      'repositories': Repository,
+      'commits': Commit,
+      'pulls': PullRequest,
+      'issues': Issue,
+      'users': User
+    };
     const Model = modelMap[collectionName];
     if (!Model) {
       return res.status(404).json({
@@ -141,7 +153,7 @@ export const advancedFilter = async (req, res) => {
     }
 
     const [results, total] = await Promise.all([
-      Model.find(query).sort(sort).skip(skip).limit(limitNum).lean(),
+      Model.find(query, { _id: 0 }).sort(sort).skip(skip).limit(limitNum).lean(),
       Model.countDocuments(query)
     ]);
 
@@ -185,7 +197,14 @@ export const smartSearch = async (req, res) => {
         error: 'Search query is required'
       });
     }
-
+    const modelMap = {
+      'organizations': Organization,
+      'repositories': Repository,
+      'commits': Commit,
+      'pulls': PullRequest,
+      'issues': Issue,
+      'users': User
+    };
     const Model = modelMap[collectionName];
     if (!Model) {
       return res.status(404).json({
@@ -194,7 +213,7 @@ export const smartSearch = async (req, res) => {
       });
     }
 
-    const sampleDoc = await Model.findOne({}).lean();
+    const sampleDoc = await Model.findOne({}, { _id: 0 }).lean();
     if (!sampleDoc) {
       return res.json({
         success: true,
@@ -213,7 +232,7 @@ export const smartSearch = async (req, res) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [results, total] = await Promise.all([
-      Model.find(searchQuery).skip(skip).limit(parseInt(limit)).lean(),
+      Model.find(searchQuery, { _id: 0 }).skip(skip).limit(parseInt(limit)).lean(),
       Model.countDocuments(searchQuery)
     ]);
 
