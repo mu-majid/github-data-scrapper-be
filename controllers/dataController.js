@@ -42,7 +42,7 @@ class DataController {
     }
   }
 
-    applyFiltersToQuery(query, filters) {
+  applyFiltersToQuery(query, filters) {
     if (!filters || !filters.length) return query;
 
     const filter = filters[0];
@@ -97,6 +97,44 @@ class DataController {
     return query;
   };
 
+  buildFacetedQuery(baseQuery, facets) {
+    console.log('baseQuery ',baseQuery)
+    if (!facets || typeof facets !== 'object') {
+    console.log('next')
+
+      return baseQuery;
+    }
+
+    const query = { ...baseQuery, ...facets };
+
+    // Object.keys(facets).forEach(field => {
+    //   const facetFilter = facets[field];
+
+    //   console.log('next facetFilter', facetFilter)
+    //   if (!facetFilter) return;
+
+    //   // Handle different types of facet filters
+    //   if (facetFilter.values && Array.isArray(facetFilter.values) && facetFilter.values.length > 0) {
+    //     // Multiple value selection
+    //     query[field] = { $in: facetFilter.values };
+    //   } else if (facetFilter.range) {
+    //     // Range filter (for dates and numbers)
+    //     query[field] = {};
+    //     if (facetFilter.range.min !== undefined) {
+    //       query[field].$gte = facetFilter.range.min;
+    //     }
+    //     if (facetFilter.range.max !== undefined) {
+    //       query[field].$lte = facetFilter.range.max;
+    //     }
+    //   } else if (facetFilter.value !== undefined) {
+    //     // Single value selection
+    //     query[field] = facetFilter.value;
+    //   }
+    // });
+
+    return query;
+  };
+
   async getCollectionData(req, res) {
     try {
       const modelMap = {
@@ -108,10 +146,7 @@ class DataController {
         'users': User
       };
       const { collectionName } = req.params;
-      const { page = 1, limit = 50, search = '', sortBy = 'createdAt', sortOrder = 'desc', activeFilterId } = req.query;
-
-
-
+      const { page = 1, limit = 50, search = '', sortBy = 'createdAt', sortOrder = 'desc', activeFilterId, facets, facetQuery } = req.query;
       const Model = modelMap[collectionName];
       if (!Model) {
         return res.status(400).json({
@@ -128,10 +163,10 @@ class DataController {
           collection: collectionName,
           isActive: true
         }).lean();
-        console.log('>> ',activeFilter)
+        console.log('>> ', activeFilter)
         if (activeFilter) {
           query = this.applyFiltersToQuery(query, [activeFilter]);
-        console.log('>> query',query)
+          console.log('>> query', query)
 
         }
       }
@@ -149,7 +184,16 @@ class DataController {
           }));
         }
       }
+      if (facetQuery) {
+        try {
+          const parsedFacets = typeof facetQuery === 'string' ? JSON.parse(facetQuery) : facetQuery;
+          query = this.buildFacetedQuery(query, parsedFacets);
+        } catch (error) {
+          console.error('Error parsing facets:', error);
+        }
+      }
 
+      console.log('getCollectionData query ', JSON.stringify(query, null, 2))
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const sortOptions = {};
       sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
@@ -163,15 +207,10 @@ class DataController {
         Model.countDocuments(query)
       ]);
 
-      // Enhanced field extraction with nested object support
       const sampleDoc = await Model.findOne(query, { _id: 0 }).lean();
       let fields = [];
-
       if (sampleDoc) {
-        // Extract all fields including nested ones
         fields = extractAllFieldsFromDocument(sampleDoc);
-
-        // Filter out MongoDB internal fields and userId
         fields = fields.filter(field =>
           !field.startsWith('_') &&
           field !== '__v' &&
@@ -228,7 +267,7 @@ class DataController {
       }
 
       const sampleDocs = await Model
-        .find({}, {_id: 0, __v: 0})
+        .find({}, { _id: 0, __v: 0 })
         .limit(parseInt(sample))
         .lean();
 
@@ -300,6 +339,81 @@ class DataController {
     }
   }
 
+  async facetedSearch(req, res, next) {
+    try {
+      const { collection } = req.params;
+      const { facets, page = 1, limit = 50 } = req.body;
+
+      if (!facets || typeof facets !== 'object') {
+        return res.status(400).json({
+          success: false,
+          error: 'Facets object is required'
+        });
+      }
+
+      const offset = (page - 1) * limit;
+      const query = this.buildFacetedQuery({}, facets);
+      const modelMap = {
+        'organizations': Organization,
+        'repositories': Repository,
+        'commits': Commit,
+        'pulls': PullRequest,
+        'issues': Issue,
+        'users': User
+      };
+      const Model = modelMap[collection];
+      if (!Model) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid collection name'
+        });
+      }
+      // Execute query with pagination
+      const [data, total] = await Promise.all([
+        Model.find(query, {_id:0, __v:0})
+          .skip(offset)
+          .limit(parseInt(limit))
+          .toArray(),
+        coll.countDocuments(query)
+      ]);
+
+      const facetCounts = {};
+      const facetFields = Object.keys(facets);
+
+      await Promise.all(
+        facetFields.map(async (field) => {
+          const pipeline = [
+            { $match: query },
+            { $group: { _id: `$${field}`, count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 20 }
+          ];
+
+          const counts = await Model.aggregate(pipeline);
+          facetCounts[field] = counts.map(item => ({
+            value: item._id,
+            count: item.count
+          }));
+        })
+      );
+
+      res.json({
+        success: true,
+        data,
+        facetCounts,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      });
+
+    } catch (error) {
+      console.error('Error in faceted search:', error);
+      next(error);
+    }
+  };
 
 
 }

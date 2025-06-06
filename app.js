@@ -21,7 +21,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 const limiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
+  windowMs: 1 * 60 * 1000, // 5 minutes
   max: 100 // limit each IP to 100 requests per windowMs
 });
 app.use(limiter);
@@ -39,6 +39,7 @@ import dataRoutes from './routes/data.js';
 import searchRoutes from './routes/search.js';
 import userRoutes from './routes/user.js';
 import filterRoutes from './routes/filter.js';
+import facetRoutes from './routes/facet.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/github', githubRoutes);
@@ -46,6 +47,7 @@ app.use('/api/data', dataRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/filters', filterRoutes);
+app.use('/api/facets', facetRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'GitHub OAuth Backend Server is running!' });

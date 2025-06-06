@@ -107,13 +107,15 @@ export const checkRateLimit = async (accessToken) => {
 };
 
 // Query Helpers
-
+function isNumber(value) {
+  return typeof value === 'number';
+}
 export const getTicketSearchQuery = (ticketId, collectionName) => {
   const queries = {
     issues: {
       $or: [
-        { id: parseInt(ticketId) || ticketId },
-        { number: parseInt(ticketId) || 0 },
+        { id: isNumber(ticketId) ? parseInt(ticketId) : ticketId },
+        { number: isNumber(ticketId) ? parseInt(ticketId) : 0 },
         { node_id: ticketId },
         { title: { $regex: ticketId, $options: 'i' } },
         { body: { $regex: ticketId, $options: 'i' } }
@@ -121,8 +123,8 @@ export const getTicketSearchQuery = (ticketId, collectionName) => {
     },
     pulls: {
       $or: [
-        { id: parseInt(ticketId) || ticketId },
-        { number: parseInt(ticketId) || 0 },
+        { id: isNumber(ticketId) ? parseInt(ticketId) : ticketId },
+        { number: isNumber(ticketId) ? parseInt(ticketId) : 0 },
         { node_id: ticketId },
         { title: { $regex: ticketId, $options: 'i' } },
         { body: { $regex: ticketId, $options: 'i' } }

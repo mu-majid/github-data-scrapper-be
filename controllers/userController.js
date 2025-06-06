@@ -30,6 +30,8 @@ export const findUser = async (req, res) => {
       try {
 
         const Model = modelMap[collectionName];
+        console.log(' DEBUG ', ticketId, collectionName)
+
         const searchQuery = getTicketSearchQuery(ticketId, collectionName);
         const results = await Model.find(searchQuery, {_id:0, __v:0}).skip(skip).limit(parseInt(limit)).lean();
         console.log(' DEBUG ', Model, collectionName)
