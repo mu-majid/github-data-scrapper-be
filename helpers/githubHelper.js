@@ -105,3 +105,92 @@ export const checkRateLimit = async (accessToken) => {
   const result = await githubAPI('/rate_limit', accessToken);
   return result.success ? result.data : null;
 };
+
+// Query Helpers
+
+export const getTicketSearchQuery = (ticketId, collectionName) => {
+  const queries = {
+    issues: {
+      $or: [
+        { id: parseInt(ticketId) || ticketId },
+        { number: parseInt(ticketId) || 0 },
+        { node_id: ticketId },
+        { title: { $regex: ticketId, $options: 'i' } },
+        { body: { $regex: ticketId, $options: 'i' } }
+      ]
+    },
+    pulls: {
+      $or: [
+        { id: parseInt(ticketId) || ticketId },
+        { number: parseInt(ticketId) || 0 },
+        { node_id: ticketId },
+        { title: { $regex: ticketId, $options: 'i' } },
+        { body: { $regex: ticketId, $options: 'i' } }
+      ]
+    },
+    commits: {
+      $or: [
+        { sha: ticketId },
+        { node_id: ticketId },
+        { 'commit.message': { $regex: ticketId, $options: 'i' } },
+        { 'commit.sha': ticketId }
+      ]
+    }
+  };
+  
+  return queries[collectionName] || {};
+};
+
+export const extractUserData = (item, collectionName) => {
+  let user = null;
+  let date = null;
+  let summary = '';
+  let description = '';
+  
+  switch (collectionName) {
+    case 'issues':
+      user = item.assignee || item.user;
+      date = item.closed_at || item.updated_at || item.created_at;
+      summary = item.title || 'No title';
+      description = item.body || 'No description';
+      break;
+      
+    case 'pulls':
+      user = item.merged_by || item.assignee || item.user;
+      date = item.merged_at || item.closed_at || item.updated_at || item.created_at;
+      summary = item.title || 'No title';
+      description = item.body || 'No description';
+      break;
+      
+    case 'commits':
+      user = item.author || item.committer || item.commit?.author || item.commit?.committer;
+      date = item.commit?.author?.date || item.commit?.committer?.date || item.authored_at;
+      summary = item.commit?.message || item.message || 'No message';
+      description = summary;
+      break;
+      
+    default:
+      user = item.user || item.author || item.owner;
+      date = item.updated_at || item.created_at;
+      summary = item.title || item.name || 'No title';
+      description = item.description || item.body || 'No description';
+  }
+  
+  return {
+    id: item.id || item.sha || item.node_id,
+    user: user?.login || user?.name || 'Unknown',
+    userName: user?.name || user?.login || 'Unknown',
+    userId: user?.id || 'Unknown',
+    userEmail: user?.email || 'Unknown',
+    userAvatarUrl: user?.avatar_url || '',
+    date: date,
+    summary: summary,
+    description: description,
+    collection: collectionName,
+    ticketId: item.number || item.id || item.sha
+  };
+};
+
+export const getSearchableCollections = () => [
+  'commits', 'pulls', 'issues', 'repos', 'users', 'organizations'
+];
