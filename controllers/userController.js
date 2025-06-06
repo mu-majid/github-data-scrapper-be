@@ -31,7 +31,7 @@ export const findUser = async (req, res) => {
 
         const Model = modelMap[collectionName];
         const searchQuery = getTicketSearchQuery(ticketId, collectionName);
-        const results = await Model.find(searchQuery).skip(skip).limit(parseInt(limit)).lean();
+        const results = await Model.find(searchQuery, {_id:0, __v:0}).skip(skip).limit(parseInt(limit)).lean();
         console.log(' DEBUG ', Model, collectionName)
         console.log(' DEBUG ', searchQuery, collectionName)
 
@@ -151,7 +151,7 @@ export const getUserActivity = async (req, res) => {
           query = { ...query, ...dateQuery };
         }
 
-        const results = await collection.find(query).sort({ created_at: -1 }).toArray();
+        const results = await collection.find(query, {_id:0, __v:0}).sort({ created_at: -1 }).toArray();
 
         return results.map(item => ({
           ...extractUserData(item, collectionName),

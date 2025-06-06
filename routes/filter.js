@@ -11,10 +11,7 @@ router.post('/', createFilter);
 router.put('/:id', updateFilter);
 router.delete('/:id', deleteFilter);
 
-// Toggle filter active status
 router.patch('/:id/toggle', toggleFilter);
-
-// Get active filters for a collection
 router.get('/collection/:collection', getActiveFiltersForCollection);
 
 export default router;

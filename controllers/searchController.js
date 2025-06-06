@@ -51,7 +51,7 @@ export const globalSearch = async (req, res) => {
         const skip = (parseInt(page) - 1) * parseInt(limit);
         let searchQuery = buildSearchQuery(query); // can use getSearchFieldsForCollection(collectionName) as second param to use or instead of text index
         const searchResults = await Model
-          .find(searchQuery)
+          .find(searchQuery, {_id: 0, __v:0})
           .skip(skip)
           .limit(parseInt(limit))
           .lean();
@@ -135,7 +135,6 @@ export const advancedFilter = async (req, res) => {
       query = { ...query, ...dateQuery };
     }
 
-    // Apply text search
     if (search && search.trim()) {
       const searchQuery = buildSearchQuery(search);
       query = { ...query, ...searchQuery };
@@ -144,7 +143,6 @@ export const advancedFilter = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const limitNum = parseInt(limit);
 
-    // Sorting
     let sort = {};
     if (sortBy) {
       sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
@@ -153,7 +151,7 @@ export const advancedFilter = async (req, res) => {
     }
 
     const [results, total] = await Promise.all([
-      Model.find(query, { _id: 0 }).sort(sort).skip(skip).limit(limitNum).lean(),
+      Model.find(query, { _id: 0, __v:0 }).sort(sort).skip(skip).limit(limitNum).lean(),
       Model.countDocuments(query)
     ]);
 
@@ -232,7 +230,7 @@ export const smartSearch = async (req, res) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [results, total] = await Promise.all([
-      Model.find(searchQuery, { _id: 0 }).skip(skip).limit(parseInt(limit)).lean(),
+      Model.find(searchQuery, { _id: 0, __v:0 }).skip(skip).limit(parseInt(limit)).lean(),
       Model.countDocuments(searchQuery)
     ]);
 

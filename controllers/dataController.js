@@ -1,4 +1,5 @@
 import { Organization, Repository, Commit, PullRequest, Issue, User } from '../models/GithubData.js';
+import Filter from '../models/Filter.js'
 import { extractAllFields, extractAllFieldsFromDocument, flattenDocumentForResponse } from '../helpers/dataViewHelper.js';
 
 class DataController {
@@ -41,6 +42,61 @@ class DataController {
     }
   }
 
+    applyFiltersToQuery(query, filters) {
+    if (!filters || !filters.length) return query;
+
+    const filter = filters[0];
+
+    // Apply date range filter
+    if (filter.filters.dateRange) {
+      const { field, startDate, endDate } = filter.filters.dateRange;
+      query[field] = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
+    // Apply status filter
+    if (filter.filters.status.field && filter.filters.status.values.length > 0) {
+      const { field, values } = filter.filters.status;
+      query[field] = { $in: values };
+    }
+
+    // Apply custom field filters
+    if (filter.filters.customFields && filter.filters.customFields.length > 0) {
+      filter.filters.customFields.forEach(({ field, operator, value }) => {
+        switch (operator) {
+          case 'equals':
+            query[field] = value;
+            break;
+          case 'contains':
+            query[field] = { $regex: value, $options: 'i' };
+            break;
+          case 'startsWith':
+            query[field] = { $regex: `^${value}`, $options: 'i' };
+            break;
+          case 'endsWith':
+            query[field] = { $regex: `${value}$`, $options: 'i' };
+            break;
+          case 'greaterThan':
+            query[field] = { $gt: value };
+            break;
+          case 'lessThan':
+            query[field] = { $lt: value };
+            break;
+          case 'in':
+            query[field] = { $in: value };
+            break;
+          case 'notIn':
+            query[field] = { $nin: value };
+            break;
+        }
+      });
+    }
+
+    return query;
+  };
+
   async getCollectionData(req, res) {
     try {
       const modelMap = {
@@ -64,19 +120,19 @@ class DataController {
         });
       }
 
-      const query = { userId: req.githubIntegration.userId };
-      // Apply active filters if provided
+      let query = { userId: req.githubIntegration.userId };
       if (activeFilterId) {
-        const Filter = require('../models/filter.model');
         const activeFilter = await Filter.findOne({
           _id: activeFilterId,
-          userId: req.user._id,
-          collection: name,
+          userId: req.githubIntegration.userId,
+          collection: collectionName,
           isActive: true
-        });
-
+        }).lean();
+        console.log('>> ',activeFilter)
         if (activeFilter) {
-          query = applyFiltersToQuery(query, [activeFilter]);
+          query = this.applyFiltersToQuery(query, [activeFilter]);
+        console.log('>> query',query)
+
         }
       }
       if (search) {
@@ -99,7 +155,7 @@ class DataController {
       sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
       const [data, total] = await Promise.all([
-        Model.find(query, { _id: 0 })
+        Model.find(query, { _id: 0, __v: 0 })
           .sort(sortOptions)
           .skip(skip)
           .limit(parseInt(limit))
@@ -123,8 +179,6 @@ class DataController {
         );
       }
       const flattenedData = data.map(doc => flattenDocumentForResponse(doc));
-      console.log('flattenedData : ', JSON.stringify(flattenedData, null, 2))
-      console.log('data : ', JSON.stringify(data, null, 2))
 
       res.json({
         success: true,
@@ -174,7 +228,7 @@ class DataController {
       }
 
       const sampleDocs = await Model
-        .find({})
+        .find({}, {_id: 0, __v: 0})
         .limit(parseInt(sample))
         .lean();
 
@@ -246,60 +300,7 @@ class DataController {
     }
   }
 
-  applyFiltersToQuery(query, filters) {
-    if (!filters || !filters.length) return query;
 
-    const filter = filters[0]; // Use the first active filter
-
-    // Apply date range filter
-    if (filter.filters.dateRange) {
-      const { field, startDate, endDate } = filter.filters.dateRange;
-      query[field] = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
-    }
-
-    // Apply status filter
-    if (filter.filters.status) {
-      const { field, values } = filter.filters.status;
-      query[field] = { $in: values };
-    }
-
-    // Apply custom field filters
-    if (filter.filters.customFields && filter.filters.customFields.length > 0) {
-      filter.filters.customFields.forEach(({ field, operator, value }) => {
-        switch (operator) {
-          case 'equals':
-            query[field] = value;
-            break;
-          case 'contains':
-            query[field] = { $regex: value, $options: 'i' };
-            break;
-          case 'startsWith':
-            query[field] = { $regex: `^${value}`, $options: 'i' };
-            break;
-          case 'endsWith':
-            query[field] = { $regex: `${value}$`, $options: 'i' };
-            break;
-          case 'greaterThan':
-            query[field] = { $gt: value };
-            break;
-          case 'lessThan':
-            query[field] = { $lt: value };
-            break;
-          case 'in':
-            query[field] = { $in: value };
-            break;
-          case 'notIn':
-            query[field] = { $nin: value };
-            break;
-        }
-      });
-    }
-
-    return query;
-  };
 
 }
 

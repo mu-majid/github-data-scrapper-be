@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const organizationSchema = new mongoose.Schema({
-  userId: { type: String, required: true },
+  userId: { type: String, required: true, ref: 'User' },
   id: { type: Number, required: true },
   login: { type: String, required: true },
   url: { type: String },

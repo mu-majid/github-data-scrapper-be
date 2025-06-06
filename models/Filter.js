@@ -1,8 +1,8 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const filterSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'User',
     required: true
   },
@@ -57,4 +57,4 @@ filterSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('Filter', filterSchema);
+export default mongoose.model('Filter', filterSchema);

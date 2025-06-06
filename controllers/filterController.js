@@ -2,10 +2,12 @@ import Filter from '../models/Filter.js';
 
 export const getUserFilters = async (req, res, next) => {
   try {
-    const filters = await Filter.find({ userId: req.user._id })
+    const filters = await Filter.find({ userId: req.githubIntegration.userId })
       .sort({ createdAt: -1 });
     res.json(filters);
   } catch (error) {
+    console.log(error)
+
     next(error);
   }
 };
@@ -14,7 +16,7 @@ export const getFilter = async (req, res, next) => {
   try {
     const filter = await Filter.findOne({
       _id: req.params.id,
-      userId: req.user._id
+      userId: req.githubIntegration.userId
     });
     
     if (!filter) {
@@ -23,6 +25,8 @@ export const getFilter = async (req, res, next) => {
     
     res.json(filter);
   } catch (error) {
+    console.log(error)
+
     next(error);
   }
 };
@@ -32,12 +36,14 @@ export const createFilter = async (req, res, next) => {
 
     const filter = new Filter({
       ...req.body,
-      userId: req.user._id
+      userId: req.githubIntegration.userId
     });
 
     await filter.save();
     res.status(201).json(filter);
   } catch (error) {
+    console.log(error)
+
     next(error);
   }
 };
@@ -45,7 +51,7 @@ export const createFilter = async (req, res, next) => {
 export const updateFilter = async (req, res, next) => {
   try {
     const filter = await Filter.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
+      { _id: req.params.id, userId: req.githubIntegration.userId },
       { ...req.body, updatedAt: Date.now() },
       { new: true }
     );
@@ -56,6 +62,8 @@ export const updateFilter = async (req, res, next) => {
 
     res.json(filter);
   } catch (error) {
+    console.log(error)
+
     next(error);
   }
 };
@@ -64,7 +72,7 @@ export const deleteFilter = async (req, res, next) => {
   try {
     const filter = await Filter.findOneAndDelete({
       _id: req.params.id,
-      userId: req.user._id
+      userId: req.githubIntegration.userId
     });
 
     if (!filter) {
@@ -73,6 +81,7 @@ export const deleteFilter = async (req, res, next) => {
 
     res.json({ message: 'Filter deleted successfully' });
   } catch (error) {
+    console.log(error)
     next(error);
   }
 };
@@ -81,7 +90,7 @@ export const toggleFilter = async (req, res, next) => {
   try {
     const filter = await Filter.findOne({
       _id: req.params.id,
-      userId: req.user._id
+      userId: req.githubIntegration.userId
     });
 
     if (!filter) {
@@ -91,7 +100,7 @@ export const toggleFilter = async (req, res, next) => {
     // If activating this filter, deactivate all others for the same collection
     if (!filter.isActive) {
       await Filter.updateMany(
-        { userId: req.user._id, collection: filter.collection },
+        { userId: req.githubIntegration.userId, collection: filter.collection },
         { isActive: false }
       );
     }
@@ -101,6 +110,8 @@ export const toggleFilter = async (req, res, next) => {
 
     res.json(filter);
   } catch (error) {
+    console.log(error)
+
     next(error);
   }
 };
@@ -108,13 +119,15 @@ export const toggleFilter = async (req, res, next) => {
 export const getActiveFiltersForCollection = async (req, res, next) => {
   try {
     const filters = await Filter.find({
-      userId: req.user._id,
+      userId: req.githubIntegration.userId,
       collection: req.params.collection,
       isActive: true
     });
 
     res.json(filters);
   } catch (error) {
+    console.log(error)
+
     next(error);
   }
 };
