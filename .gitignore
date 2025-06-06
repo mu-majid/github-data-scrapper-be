@@ -1,7 +1,6 @@
 # Dependencies
 node_modules/
 
-.env
 .env.docker
 
 # OS generated files
@@ -20,3 +19,4 @@ Dockerfile.dev
 .git/
 
 
+config.bat
