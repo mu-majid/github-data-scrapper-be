@@ -162,7 +162,7 @@ const repositorySchema = new mongoose.Schema({
 const commitSchema = new mongoose.Schema({
   userId: { type: String, required: true },
   organizationId: { type: Number, required: true },
-  repositoryId: { type: Number, required: true },
+  repositoryId: { type: Number, required: true, ref: 'Repository' },
   sha: { type: String, required: true },
   commit: {
     author: {
@@ -221,7 +221,7 @@ const commitSchema = new mongoose.Schema({
 const pullRequestSchema = new mongoose.Schema({
   userId: { type: String, required: true },
   organizationId: { type: Number, required: true },
-  repositoryId: { type: Number, required: true },
+  repositoryId: { type: Number, required: true, ref: 'Repository' },
   id: { type: Number, required: true },
   number: { type: Number, required: true },
   state: { type: String },
@@ -292,8 +292,8 @@ const pullRequestSchema = new mongoose.Schema({
 
 const issueSchema = new mongoose.Schema({
   userId: { type: String, required: true },
-  organizationId: { type: Number, required: true },
-  repositoryId: { type: Number, required: true },
+  organizationId: { type: Number, required: true, ref: 'Organization' },
+  repositoryId: { type: Number, required: true, ref: 'Repository' },
   id: { type: Number, required: true },
   number: { type: Number, required: true },
   title: { type: String },
