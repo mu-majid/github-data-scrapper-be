@@ -52,7 +52,9 @@ class DataController {
         'users': User
       };
       const { collectionName } = req.params;
-      const { page = 1, limit = 50, search = '', sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+      const { page = 1, limit = 50, search = '', sortBy = 'createdAt', sortOrder = 'desc', activeFilterId } = req.query;
+
+
 
       const Model = modelMap[collectionName];
       if (!Model) {
@@ -63,7 +65,20 @@ class DataController {
       }
 
       const query = { userId: req.githubIntegration.userId };
+      // Apply active filters if provided
+      if (activeFilterId) {
+        const Filter = require('../models/filter.model');
+        const activeFilter = await Filter.findOne({
+          _id: activeFilterId,
+          userId: req.user._id,
+          collection: name,
+          isActive: true
+        });
 
+        if (activeFilter) {
+          query = applyFiltersToQuery(query, [activeFilter]);
+        }
+      }
       if (search) {
         const schemaFields = Object.keys(Model.schema.paths);
         const searchableFields = schemaFields.filter(field =>
@@ -230,6 +245,62 @@ class DataController {
         return 200;
     }
   }
+
+  applyFiltersToQuery(query, filters) {
+    if (!filters || !filters.length) return query;
+
+    const filter = filters[0]; // Use the first active filter
+
+    // Apply date range filter
+    if (filter.filters.dateRange) {
+      const { field, startDate, endDate } = filter.filters.dateRange;
+      query[field] = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
+    // Apply status filter
+    if (filter.filters.status) {
+      const { field, values } = filter.filters.status;
+      query[field] = { $in: values };
+    }
+
+    // Apply custom field filters
+    if (filter.filters.customFields && filter.filters.customFields.length > 0) {
+      filter.filters.customFields.forEach(({ field, operator, value }) => {
+        switch (operator) {
+          case 'equals':
+            query[field] = value;
+            break;
+          case 'contains':
+            query[field] = { $regex: value, $options: 'i' };
+            break;
+          case 'startsWith':
+            query[field] = { $regex: `^${value}`, $options: 'i' };
+            break;
+          case 'endsWith':
+            query[field] = { $regex: `${value}$`, $options: 'i' };
+            break;
+          case 'greaterThan':
+            query[field] = { $gt: value };
+            break;
+          case 'lessThan':
+            query[field] = { $lt: value };
+            break;
+          case 'in':
+            query[field] = { $in: value };
+            break;
+          case 'notIn':
+            query[field] = { $nin: value };
+            break;
+        }
+      });
+    }
+
+    return query;
+  };
+
 }
 
 export default new DataController();
