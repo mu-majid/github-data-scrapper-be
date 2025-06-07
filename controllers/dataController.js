@@ -65,6 +65,7 @@ class DataController {
     // Apply custom field filters
     if (filter.filters.customFields && filter.filters.customFields.length > 0) {
       filter.filters.customFields.forEach(({ field, operator, value }) => {
+        // field = field.replace('_', '.')
         switch (operator) {
           case 'equals':
             query[field] = value;
@@ -146,7 +147,7 @@ class DataController {
         'users': User
       };
       const { collectionName } = req.params;
-      const { page = 1, limit = 50, search = '', sortBy = 'createdAt', sortOrder = 'desc', activeFilterId, facets, facetQuery } = req.query;
+      const { page = 1, limit = 50, search = '', sortBy = 'createdAt', sortOrder = 'desc', activeFilterId, facetQuery } = req.query;
       const Model = modelMap[collectionName];
       if (!Model) {
         return res.status(400).json({
@@ -163,10 +164,10 @@ class DataController {
           collection: collectionName,
           isActive: true
         }).lean();
-        console.log('>> ', activeFilter)
         if (activeFilter) {
+          console.log(' > activeFilter ', activeFilter)
           query = this.applyFiltersToQuery(query, [activeFilter]);
-          console.log('>> query', query)
+          console.log(' > activeFilter query', query)
 
         }
       }
@@ -193,11 +194,11 @@ class DataController {
         }
       }
 
-      console.log('getCollectionData query ', JSON.stringify(query, null, 2))
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const sortOptions = {};
       sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
-
+      
+      console.log('getCollectionData query ', JSON.stringify(query, null, 2))
       const [data, total] = await Promise.all([
         Model.find(query, { _id: 0, __v: 0 })
           .sort(sortOptions)
@@ -368,7 +369,6 @@ class DataController {
           message: 'Invalid collection name'
         });
       }
-      // Execute query with pagination
       const [data, total] = await Promise.all([
         Model.find(query, {_id:0, __v:0})
           .skip(offset)

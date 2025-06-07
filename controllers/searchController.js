@@ -55,6 +55,7 @@ export const globalSearch = async (req, res) => {
           .skip(skip)
           .limit(parseInt(limit))
           .lean();
+            console.log('global ssearch ', collectionName, searchQuery)
 
         return {
           collection: collectionName,
@@ -73,7 +74,6 @@ export const globalSearch = async (req, res) => {
     });
 
     const results = await Promise.all(searchPromises);
-    console.log('global ssearch ', results)
     const totalResults = results.reduce((sum, result) => sum + result.count, 0);
 
     res.json({

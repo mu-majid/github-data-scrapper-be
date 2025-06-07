@@ -40,6 +40,7 @@ import searchRoutes from './routes/search.js';
 import userRoutes from './routes/user.js';
 import filterRoutes from './routes/filter.js';
 import facetRoutes from './routes/facet.js';
+import dataVisualisationRoutes from './routes/dataVisual.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/github', githubRoutes);
@@ -48,6 +49,7 @@ app.use('/api/search', searchRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/filters', filterRoutes);
 app.use('/api/facets', facetRoutes);
+app.use('/api/visualisation', dataVisualisationRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'GitHub OAuth Backend Server is running!' });

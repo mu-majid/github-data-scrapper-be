@@ -255,9 +255,9 @@ class GitHubController {
       console.log('\nStarting Jupyter test data sync for user:', userId);
       console.log('> Started at:', syncStartTime.toISOString());
       const targetRepos = [
-        'jupyter/notebook',      // ~5,000 issues, 2,000 PRs
-        'jupyter/jupyterlab',    // ~7,000 issues, 3,000 PRs  
-        'jupyter/nbconvert'      // ~1,500 issues, 800 PRs
+        'jupyter/notebook',      
+        'jupyter/jupyterlab',     
+        'ipython/ipython'      
       ];
 
       let totalRepos = 0;
@@ -296,7 +296,7 @@ class GitHubController {
             `/repos/${repoFullName}/commits`,
             accessToken,
             { per_page: 100 },
-            4 // <--- control the numbers of synced data
+            21 // <--- control the numbers of synced data
           );
           totalCommits += commits.length;
 
@@ -315,7 +315,7 @@ class GitHubController {
             `/repos/${repoFullName}/pulls`,
             accessToken,
             { state: 'all', sort: 'updated', direction: 'desc', per_page: 100 },
-            3 // <--- control the numbers of synced data
+            11 // <--- control the numbers of synced data
           );
           totalPulls += pulls.length;
 
@@ -334,7 +334,7 @@ class GitHubController {
             `/repos/${repoFullName}/issues`,
             accessToken,
             { state: 'all', sort: 'updated', direction: 'desc', per_page: 100 },
-            3 // <--- control the numbers of synced data
+            6 // <--- control the numbers of synced data
           );
 
           const realIssues = issues.filter(issue => !issue.pull_request);

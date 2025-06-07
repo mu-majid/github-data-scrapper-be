@@ -1,5 +1,4 @@
 import { Organization, Repository, Commit, PullRequest, Issue, User } from '../models/GithubData.js';
-import Filter from '../models/Filter.js'
 
 const modelMap = {
   'organizations': Organization,
