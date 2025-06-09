@@ -9,8 +9,6 @@ import {
 
 import { getSearchableCollections } from '../helpers/githubHelper.js';
 
-
-
 export const globalSearch = async (req, res) => {
   try {
     const modelMap = {
@@ -42,8 +40,6 @@ export const globalSearch = async (req, res) => {
           console.warn(`Model not found for collection: ${collectionName}`);
           return { collection: collectionName, count: 0, data: [], error: 'Model not found' };
         }
-
-        // Check if collection has documents
         const count = await Model.countDocuments({});
         if (count === 0) {
           return { collection: collectionName, count: 0, data: [] };
@@ -96,169 +92,6 @@ export const globalSearch = async (req, res) => {
   }
 };
 
-export const advancedFilter = async (req, res) => {
-  try {
-    const { name: collectionName } = req.params;
-    const {
-      filters = {},
-      dateRange,
-      search,
-      page = 1,
-      limit = 50,
-      sortBy,
-      sortOrder = 'asc'
-    } = req.body;
-
-    const modelMap = {
-      'organizations': Organization,
-      'repositories': Repository,
-      'commits': Commit,
-      'pulls': PullRequest,
-      'issues': Issue,
-      'users': User
-    };
-    const Model = modelMap[collectionName];
-    if (!Model) {
-      return res.status(404).json({
-        success: false,
-        error: `Collection '${collectionName}' not found`
-      });
-    }
-
-    let query = {};
-
-    const customFiltersQuery = buildCustomFilters(filters);
-    Object.assign(query, customFiltersQuery);
-
-    const dateQuery = buildDateRangeQuery(dateRange);
-    if (Object.keys(dateQuery).length > 0) {
-      query = { ...query, ...dateQuery };
-    }
-
-    if (search && search.trim()) {
-      const searchQuery = buildSearchQuery(search);
-      query = { ...query, ...searchQuery };
-    }
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const limitNum = parseInt(limit);
-
-    let sort = {};
-    if (sortBy) {
-      sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
-    } else {
-      sort = { _id: -1 }; // Default sort by _id descending
-    }
-
-    const [results, total] = await Promise.all([
-      Model.find(query, { _id: 0, __v:0 }).sort(sort).skip(skip).limit(limitNum).lean(),
-      Model.countDocuments(query)
-    ]);
-
-    res.json({
-      success: true,
-      data: flattenDocuments(results),
-      pagination: {
-        current: parseInt(page),
-        total: Math.ceil(total / limitNum),
-        count: results.length,
-        totalRecords: total,
-        hasNext: skip + results.length < total,
-        hasPrev: parseInt(page) > 1
-      },
-      appliedFilters: {
-        filters,
-        dateRange,
-        search,
-        sortBy,
-        sortOrder
-      }
-    });
-
-  } catch (error) {
-    console.error('Advanced filter error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Filter operation failed',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-};
-
-export const smartSearch = async (req, res) => {
-  try {
-    const { query, collection: collectionName, page = 1, limit = 50 } = req.query;
-
-    if (!query || query.trim() === '') {
-      return res.status(400).json({
-        success: false,
-        error: 'Search query is required'
-      });
-    }
-    const modelMap = {
-      'organizations': Organization,
-      'repositories': Repository,
-      'commits': Commit,
-      'pulls': PullRequest,
-      'issues': Issue,
-      'users': User
-    };
-    const Model = modelMap[collectionName];
-    if (!Model) {
-      return res.status(404).json({
-        success: false,
-        error: `Collection '${collectionName}' not found`
-      });
-    }
-
-    const sampleDoc = await Model.findOne({}, { _id: 0 }).lean();
-    if (!sampleDoc) {
-      return res.json({
-        success: true,
-        data: [],
-        totalResults: 0,
-        message: 'Collection is empty'
-      });
-    }
-
-    const searchableFields = extractSearchableFields(sampleDoc);
-    const searchQuery = {
-      $or: searchableFields.map(field => ({
-        [field]: { $regex: query, $options: 'i' }
-      }))
-    };
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const [results, total] = await Promise.all([
-      Model.find(searchQuery, { _id: 0, __v:0 }).skip(skip).limit(parseInt(limit)).lean(),
-      Model.countDocuments(searchQuery)
-    ]);
-
-    res.json({
-      success: true,
-      query,
-      collection: collectionName,
-      data: flattenDocuments(results),
-      searchedFields: searchableFields,
-      pagination: {
-        current: parseInt(page),
-        total: Math.ceil(total / parseInt(limit)),
-        count: results.length,
-        totalRecords: total
-      }
-    });
-
-  } catch (error) {
-    console.error('Smart search error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Smart search failed',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-};
-
-// Helper function to get search fields based on collection type
 const getSearchFieldsForCollection = (collectionName) => {
   const fieldMap = {
     'organizations': ['name', 'description', 'login', 'email'],
@@ -272,7 +105,6 @@ const getSearchFieldsForCollection = (collectionName) => {
   return fieldMap[collectionName] || ['name', 'title', 'description'];
 };
 
-// Helper function to extract searchable fields from document
 const extractSearchableFields = (document, prefix = '', maxDepth = 3) => {
   const fields = [];
 
